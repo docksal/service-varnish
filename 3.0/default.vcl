@@ -3,16 +3,16 @@
 # This is a basic VCL configuration file for varnish.  See the vcl(7)
 # man page for details on VCL syntax and semantics.
 #
- 
+
 # TODO: Update internal subnet ACL and security.
- 
+
 # Define the internal network subnet.
 # These are used below to allow internal access to certain files while not
 # allowing access from the public internet.
 # acl internal {
 #  "192.10.0.0"/24;
 # }
- 
+
 # Default backend definition.  Set this to point to your content
 # server.
 #
@@ -20,22 +20,22 @@ backend default {
   .host = "{VARNISH_BACKEND_HOST}";
   .port = "{VARNISH_BACKEND_PORT}";
 }
- 
+
 # Respond to incoming requests.
 sub vcl_recv {
   # Use anonymous, cached pages if all backends are down.
   if (!req.backend.healthy) {
     unset req.http.Cookie;
   }
- 
+
   # Allow the backend to serve up stale content if it is responding slowly.
   set req.grace = 6h;
- 
+
   # Pipe these paths directly to Apache for streaming.
   #if (req.url ~ "^/admin/content/backup_migrate/export") {
   #  return (pipe);
   #}
- 
+
   if (req.restarts == 0) {
     if (req.http.x-forwarded-for) {
       set req.http.X-Forwarded-For = req.http.X-Forwarded-For + ", " + client.ip;
@@ -44,7 +44,7 @@ sub vcl_recv {
       set req.http.X-Forwarded-For = client.ip;
     }
   }
- 
+
   # Do not cache these paths.
   if (req.url ~ "^/status\.php$" ||
       req.url ~ "^/update\.php$" ||
@@ -55,7 +55,7 @@ sub vcl_recv {
       req.url ~ "^.*/ahah/.*$") {
        return (pass);
   }
- 
+
   # Do not allow outside access to cron.php or install.php.
   #if (req.url ~ "^/(cron|install)\.php$" && !client.ip ~ internal) {
     # Have Varnish throw the error directly.
@@ -63,14 +63,14 @@ sub vcl_recv {
     # Use a custom error page that you've defined in Drupal at the path "404".
     # set req.url = "/404";
   #}
- 
+
   # Always cache the following file types for all users. This list of extensions
   # appears twice, once here and again in vcl_fetch so make sure you edit both
   # and keep them equal.
   if (req.url ~ "(?i)\.(pdf|asc|dat|txt|doc|xls|ppt|tgz|csv|png|gif|jpeg|jpg|ico|swf|css|js)(\?.*)?$") {
     unset req.http.Cookie;
   }
- 
+
   # Remove all cookies that Drupal doesn't need to know about. We explicitly
   # list the ones that Drupal does need, the SESS and NO_CACHE. If, after
   # running this code we find that either of these two cookies remains, we
@@ -85,11 +85,11 @@ sub vcl_recv {
     # 5. Remove all spaces and semi-colons from the beginning and end of the
     #    cookie string.
     set req.http.Cookie = ";" + req.http.Cookie;
-    set req.http.Cookie = regsuball(req.http.Cookie, "; +", ";");   
+    set req.http.Cookie = regsuball(req.http.Cookie, "; +", ";");
     set req.http.Cookie = regsuball(req.http.Cookie, ";(SESS[a-z0-9]+|SSESS[a-z0-9]+|NO_CACHE)=", "; \1=");
     set req.http.Cookie = regsuball(req.http.Cookie, ";[^ ][^;]*", "");
     set req.http.Cookie = regsuball(req.http.Cookie, "^[; ]+|[; ]+$", "");
- 
+
     if (req.http.Cookie == "") {
       # If there are no remaining cookies, remove the cookie header. If there
       # aren't any cookie headers, Varnish's default behavior will be to cache
@@ -103,7 +103,7 @@ sub vcl_recv {
     }
   }
 }
- 
+
 # Set a header to track a cache HIT/MISS.
 sub vcl_deliver {
   if (obj.hits > 0) {
@@ -113,7 +113,7 @@ sub vcl_deliver {
     set resp.http.X-Varnish-Cache = "MISS";
   }
 }
- 
+
 # Code determining what to do when serving items from the Apache servers.
 # beresp == Back-end response from the web server.
 sub vcl_fetch {
@@ -122,7 +122,7 @@ sub vcl_fetch {
   if (beresp.status == 404 || beresp.status == 301 || beresp.status == 500) {
     set beresp.ttl = 10m;
   }
- 
+
   # Don't allow static files to set cookies.
   # (?i) denotes case insensitive in PCRE (perl compatible regular expressions).
   # This list of extensions appears twice, once here and again in vcl_recv so
@@ -130,11 +130,18 @@ sub vcl_fetch {
   if (req.url ~ "(?i)\.(pdf|asc|dat|txt|doc|xls|ppt|tgz|csv|png|gif|jpeg|jpg|ico|swf|css|js)(\?.*)?$") {
     unset beresp.http.set-cookie;
   }
- 
+
   # Allow items to be stale if needed.
   set beresp.grace = 6h;
+
+  # Disable buffering only for BigPipe responses
+  if (beresp.http.Surrogate-Control ~ "BigPipe/1.0") {
+    set beresp.do_stream = true;
+    set beresp.ttl = 0s;
+  }
+
 }
- 
+
 # In the event of an error, show friendlier messages.
 sub vcl_error {
   # Redirect to some other URL in the case of a homepage failure.
@@ -142,7 +149,7 @@ sub vcl_error {
   #  set obj.status = 302;
   #  set obj.http.Location = "http://backup.example.com/";
   #}
- 
+
   # Otherwise redirect to the homepage, which will likely be in the cache.
   set obj.http.Content-Type = "text/html; charset=utf-8";
   synthetic {"
@@ -168,7 +175,7 @@ sub vcl_error {
 "};
   return (deliver);
 }
- 
+
 #
 # Below is a commented-out copy of the default VCL logic.  If you
 # redefine any of these subroutines, the built-in logic will be
