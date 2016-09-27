@@ -1,4 +1,4 @@
-# Varnish Docker images for Drupal
+# Varnish Docker images for Docksal
 
 Varnish 3 (same as on Acquia Cloud).  
 BigPipe support.
