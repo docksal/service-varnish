@@ -8,9 +8,9 @@ import directors;
 # Default backend definition. Points to Apache, normally. 
 # Apache is in this config on port 80.
 backend default {
-    .host = "127.0.0.1";
-    .port = "80";
-    .first_byte_timeout = 300s;
+  .host = "{VARNISH_BACKEND_HOST}";
+  .port = "{VARNISH_BACKEND_PORT}";
+  .first_byte_timeout = 300s;
 }
 
 # Access control list for PURGE requests.
