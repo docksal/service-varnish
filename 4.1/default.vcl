@@ -15,9 +15,9 @@ backend default {
 
 # Access control list for PURGE requests.
 # Here you need to put the IP address of your web server
-acl purge {
-    "127.0.0.1";
-}
+#acl purge {
+#    "127.0.0.1";
+#}
 
 # Respond to incoming requests.
 sub vcl_recv {
@@ -33,18 +33,18 @@ sub vcl_recv {
 
     # Only allow PURGE requests from IP addresses in the 'purge' ACL.
     if (req.method == "PURGE") {
-        if (!client.ip ~ purge) {
-            return (synth(405, "Not allowed."));
-        }
+        #if (!client.ip ~ purge) {
+        #    return (synth(405, "Not allowed."));
+        #}
         return (hash);
     }
 
     # Only allow BAN requests from IP addresses in the 'purge' ACL.
     if (req.method == "BAN") {
         # Same ACL check as above:
-        if (!client.ip ~ purge) {
-            return (synth(403, "Not allowed."));
-        }
+        #if (!client.ip ~ purge) {
+        #    return (synth(403, "Not allowed."));
+        #}
 
         # Logic for the ban, using the Cache-Tags header. For more info
         # see https://github.com/geerlingguy/drupal-vm/issues/397.
