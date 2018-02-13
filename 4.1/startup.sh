@@ -15,7 +15,11 @@ do
 done
 
 echo 'Starting varnishd...'
-varnishd -f /etc/varnish/default.vcl -s malloc,${VARNISH_CACHE_SIZE} -a 0.0.0.0:${VARNISH_PORT} ${VARNISH_VARNISHD_PARAMS}
+varnishd -f /etc/varnish/default.vcl \
+	-s malloc,${VARNISH_CACHE_SIZE} \
+	-a :${VARNISH_PORT} \
+	-T :${VARNISH_ADMIN_PORT} \
+	${VARNISH_VARNISHD_PARAMS}
 
-echo 'Starting varnishlog...'
-varnishlog ${VARNISH_VARNISHLOG_PARAMS}
+echo 'Streaming logs (varnishncsa)...'
+varnishncsa ${VARNISH_VARNISHNCSA_PARAMS}
