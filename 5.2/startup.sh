@@ -1,11 +1,15 @@
 #!/bin/bash
 
-# Delay start to avoid DNS lookup issues
-echo 'Waiting 5s before startup...'
-sleep 5
+set -e # Fail on errors
 
-echo 'Copying config from /opt/default.vcl...'
-cp -f /opt/default.vcl /etc/varnish/default.vcl
+custom_vcl="/var/www/.docksal/etc/varnish/default.vcl"
+if [[ -f "$custom_vcl" ]]; then
+	echo "Using custom VCL from $custom_vcl"
+	cp -f "$custom_vcl" /etc/varnish/default.vcl
+else
+	echo 'Using default VCL from /opt/default.vcl'
+	cp -f /opt/default.vcl /etc/varnish/default.vcl
+fi
 
 echo 'Evaluating config variables...'
 for name in VARNISH_BACKEND_PORT VARNISH_BACKEND_HOST VARNISH_BACKEND_DOMAIN
