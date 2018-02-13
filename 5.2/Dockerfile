@@ -1,6 +1,6 @@
-FROM alpine:3.6
+FROM alpine:3.7
 
-ENV VARNISH_VERSION 4.1
+ENV VARNISH_VERSION 5.2
 
 RUN apk add --update --no-cache \
 	bash \
