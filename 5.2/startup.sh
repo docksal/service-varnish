@@ -18,6 +18,11 @@ do
     sed -i "s|{${name}}|${value}|g" /etc/varnish/default.vcl
 done
 
+if [[ -n "${VARNISH_SECRET}" ]]; then
+    echo "${VARNISH_SECRET}" > /etc/varnish/secret
+    VARNISH_VARNISHD_PARAMS="${VARNISH_VARNISHD_PARAMS} -S /etc/varnish/secret"
+fi
+
 echo 'Starting varnishd...'
 varnishd -f /etc/varnish/default.vcl \
 	-s malloc,${VARNISH_CACHE_SIZE} \
