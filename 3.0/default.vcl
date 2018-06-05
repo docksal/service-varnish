@@ -27,6 +27,11 @@ sub vcl_recv {
   if (!req.backend.healthy) {
     unset req.http.Cookie;
   }
+  
+  if (req.request == "PURGE") {
+    ban("obj.http.url ~ " + req.url); # Assumes req.url is a regex. This might be a bit too simple
+    return (purge);
+  }
 
   # Allow the backend to serve up stale content if it is responding slowly.
   set req.grace = 6h;
@@ -111,6 +116,20 @@ sub vcl_deliver {
   }
   else {
     set resp.http.X-Varnish-Cache = "MISS";
+  }
+}
+
+sub vcl_hit {
+  if (req.request == "PURGE") {
+    ban("obj.http.url ~ " + req.url); # Assumes req.url is a regex. This might be a bit too simple
+    error 200 "Purged"
+  }
+}
+
+sub vcl_miss {
+  if (req.request == "PURGE") {
+    ban("obj.http.url ~ " + req.url); # Assumes req.url is a regex. This might be a bit too simple
+    error 200 "OK but nothing to purge - URL was not in cache";
   }
 }
 
