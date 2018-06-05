@@ -31,6 +31,11 @@ sub vcl_recv {
   if (!std.healthy(req.backend_hint)) {
     unset req.http.Cookie;
   }
+  
+  if (req.method == "PURGE") {
+    ban("obj.http.url ~ " + req.url); # Assumes req.url is a regex. This might be a bit too simple
+    return (purge);
+  }
 
   # Pipe these paths directly to Apache for streaming.
   #if (req.url ~ "^/admin/content/backup_migrate/export") {
@@ -141,6 +146,20 @@ sub vcl_backend_response {
     set beresp.ttl = 0s;
   }
 
+}
+
+sub vcl_hit {
+  if (req.method == "PURGE") {
+    ban("obj.http.url ~ " + req.url); # Assumes req.url is a regex. This might be a bit too simple
+    return(synth(200,"Purged"));
+  }
+}
+
+sub vcl_miss {
+  if (req.method == "PURGE") {
+    ban("obj.http.url ~ " + req.url); # Assumes req.url is a regex. This might be a bit too simple
+    return(synth(200,"OK but nothing to purge - URL was not in cache"));
+  }
 }
 
 # In the event of an error, show friendlier messages.
