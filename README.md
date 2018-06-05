@@ -22,6 +22,7 @@ The following feature were added on top of the Fourkitchens config:
 - `VARNISH_CACHE_SIZE` - cache size, default: `64M`
 - `VARNISH_VARNISHD_PARAMS` - extra parameters for `varnishd`.
 - `VARNISH_VARNISHNCSA_PARAMS` - parameters for `varnishncsa` (logging).
+- `VARNISH_SECRET` - allow the secret to be set for varnish.
 
 
 ## VCL
