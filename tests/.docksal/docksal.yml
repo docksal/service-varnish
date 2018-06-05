@@ -1,0 +1,18 @@
+version: "2.1"
+
+services:
+  # Web
+  web:
+    extends:
+      file: ${HOME}/.docksal/stacks/services.yml
+      service: web
+
+  # Varnish
+  varnish:
+    extends:
+      file: ${HOME}/.docksal/stacks/services.yml
+      service: varnish      
+    environment:
+      - VARNISH_SECRET
+    depends_on:
+      - web
