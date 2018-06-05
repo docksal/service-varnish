@@ -13,6 +13,14 @@
 #  "192.10.0.0"/24;
 # }
 
+import digest;
+
+acl purge {
+  "localhost";
+  "172.0.0.0"/8;
+  {VARNISH_IP_CLEAR}
+}
+
 # Default backend definition.  Set this to point to your content
 # server.
 #
@@ -29,8 +37,11 @@ sub vcl_recv {
   }
   
   if (req.request == "PURGE") {
-    ban("obj.http.url ~ " + req.url); # Assumes req.url is a regex. This might be a bit too simple
-    return (purge);
+    if ((!client.ip ~ purge) && (digest.hmac_sha256("{VARNISH_SECRET}", req.http.host + req.url) != req.http.x-hmac)) {
+      error 405 "Not allowed.";
+    }
+  
+    return (lookup);
   }
 
   # Allow the backend to serve up stale content if it is responding slowly.
@@ -121,14 +132,20 @@ sub vcl_deliver {
 
 sub vcl_hit {
   if (req.request == "PURGE") {
-    ban("obj.http.url ~ " + req.url); # Assumes req.url is a regex. This might be a bit too simple
-    error 200 "Purged"
+    if ((!client.ip ~ purge) && (digest.hmac_sha256("{VARNISH_SECRET}", req.http.host + req.url) != req.http.x-hmac)) {
+      error 405 "Not allowed.";
+    }
+  
+    error 200 "Purged";
   }
 }
 
 sub vcl_miss {
   if (req.request == "PURGE") {
-    ban("obj.http.url ~ " + req.url); # Assumes req.url is a regex. This might be a bit too simple
+    if ((!client.ip ~ purge) && (digest.hmac_sha256("{VARNISH_SECRET}", req.http.host + req.url) != req.http.x-hmac)) {
+      error 405 "Not allowed.";
+    }
+  
     error 200 "OK but nothing to purge - URL was not in cache";
   }
 }
