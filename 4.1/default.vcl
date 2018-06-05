@@ -19,6 +19,13 @@
 vcl 4.0;
 
 import std;
+import digest;
+
+acl purge {
+  "localhost";
+  "172.0.0.0"/8;
+  {VARNISH_IP_CLEAR}
+}
 
 backend default {
   .host = "{VARNISH_BACKEND_HOST}";
@@ -32,7 +39,11 @@ sub vcl_recv {
     unset req.http.Cookie;
   }
   
-  if (req.method == "PURGE") {
+  if (req.request == "PURGE") {
+    if ((!client.ip ~ purge) && (digest.hmac_sha256("{VARNISH_SECRET}", req.http.host + req.url) != req.http.x-hmac)) {
+      return(synth(405, "Not allowed."));
+    }
+  
     ban("obj.http.url ~ " + req.url); # Assumes req.url is a regex. This might be a bit too simple
     return (purge);
   }
@@ -149,14 +160,22 @@ sub vcl_backend_response {
 }
 
 sub vcl_hit {
-  if (req.method == "PURGE") {
+  if (req.request == "PURGE") {
+    if ((!client.ip ~ purge) && (digest.hmac_sha256("{VARNISH_SECRET}", req.http.host + req.url) != req.http.x-hmac)) {
+      return(synth(405, "Not allowed."));
+    }
+  
     ban("obj.http.url ~ " + req.url); # Assumes req.url is a regex. This might be a bit too simple
     return(synth(200,"Purged"));
   }
 }
 
 sub vcl_miss {
-  if (req.method == "PURGE") {
+  if (req.request == "PURGE") {
+    if ((!client.ip ~ purge) && (digest.hmac_sha256("{VARNISH_SECRET}", req.http.host + req.url) != req.http.x-hmac)) {
+      return(synth(405, "Not allowed."));
+    }
+
     ban("obj.http.url ~ " + req.url); # Assumes req.url is a regex. This might be a bit too simple
     return(synth(200,"OK but nothing to purge - URL was not in cache"));
   }
