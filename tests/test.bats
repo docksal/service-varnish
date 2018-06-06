@@ -36,8 +36,8 @@ cleanup() {
 
   # Confirm 200 Returns a Miss First Time
 	run curl -sSk -i http://varnish.tests.docksal
-	echo "$output" | grep "HTTP/1.1 200 OK"
-  echo "$output" | grep "X-Varnish-Cache: MISS"
+	[[ "$output" =~ "HTTP/1.1 200 OK" ]]
+  [[ "$output" =~ "X-Varnish-Cache: MISS" ]]
   unset output
 
   # Confirm 200 2nd Time Returns a HIT
@@ -88,7 +88,7 @@ cleanup() {
   [[ "$output" =~ "HTTP/1.1 200 OK" ]]
   [[ "$output" =~ "X-Varnish-Cache: HIT" ]]
   [[ "$output" =~ "TEST OUTPUT" ]]
-  [[ "$output" !~ "TEST OUTPUT2" ]]
+  [[ ! "$output" =~ "TEST OUTPUT2" ]]
   unset output
   
   # Confirm Purge Works
