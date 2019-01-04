@@ -19,6 +19,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update && \
 
 COPY default.vcl /opt/default.vcl
 COPY startup.sh /opt/startup.sh
+COPY healthcheck.sh /opt/healthcheck.sh
 
 ENV VARNISH_PORT 80
 ENV VARNISH_BACKEND_PORT 80
@@ -28,3 +29,6 @@ ENV VARNISH_VARNISHLOG_PARAMS '-c -m TxStatus:^50'
 EXPOSE 80
 
 CMD ["/opt/startup.sh"]
+
+# Health check script
+HEALTHCHECK --interval=5s --timeout=1s --retries=12 CMD ["/opt/healthcheck.sh"]
