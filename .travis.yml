@@ -7,7 +7,6 @@ env:
   matrix:
     - VERSION=5.2 TAGS=5.2,5,latest
     - VERSION=4.1 TAGS=4.1,4
-    - VERSION=3.0 TAGS=3.0,3
 
 install:
   - curl -fsSL get.docksal.io | bash
