@@ -57,7 +57,12 @@ sub vcl_recv {
   }
 
   if (req.method == "BAN") {
-    ban("req.http.host == " + req.http.host +" && req.url == " + req.url);
+    if (req.http.Cache-Tags) {
+      ban("obj.http.Cache-Tags ~ " + req.http.Cache-Tags);
+    }
+    else {
+      return (synth(403, "Cache-Tags header missing."));
+    }
     return(synth(200, "Ban added"));
   }
 
@@ -120,6 +125,11 @@ sub vcl_deliver {
   }
   else {
     set resp.http.X-Varnish-Cache = "MISS";
+  }
+  unset resp.http.Cache-Tags;
+
+  if (resp.http.Content-Type ~ "text/html") {
+    set resp.http.Cache-Control = "private,no-cache";
   }
 }
 
