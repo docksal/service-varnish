@@ -59,12 +59,11 @@ sub vcl_recv {
 
   if (req.method == "BAN") {
     ban("req.http.host == " + req.http.host +" && req.url == " + req.url);
-    error 200 "Ban added";
+    return(synth(200, "Ban added"));
   }
 
   if (req.method == "PURGE") {
-    purge;
-    error 200 "Purged.";
+    return(purge);
   }
 
   # Do not allow outside access to cron.php or install.php.
