@@ -57,12 +57,12 @@ sub vcl_recv {
        return (pass);
   }
 
-  if (req.request == "BAN") {
+  if (req.method == "BAN") {
     ban("req.http.host == " + req.http.host +" && req.url == " + req.url);
     error 200 "Ban added";
   }
 
-  if (req.request == "PURGE") {
+  if (req.method == "PURGE") {
     purge;
     error 200 "Purged.";
   }
