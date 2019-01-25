@@ -57,16 +57,6 @@ sub vcl_recv {
        return (pass);
   }
 
-  if (req.request == "BAN") {
-    ban("req.http.host == " + req.http.host +" && req.url == " + req.url);
-    error 200 "Ban added";
-  }
-
-  if (req.request == "PURGE") {
-    purge;
-    error 200 "Purged.";
-  }
-
   # Do not allow outside access to cron.php or install.php.
   #if (req.url ~ "^/(cron|install)\.php$" && !client.ip ~ internal) {
     # Have Varnish throw the error directly.
