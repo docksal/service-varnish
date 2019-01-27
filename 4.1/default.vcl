@@ -57,6 +57,20 @@ sub vcl_recv {
        return (pass);
   }
 
+  if (req.method == "BAN") {
+    if (req.http.Cache-Tags) {
+      ban("obj.http.Cache-Tags ~ " + req.http.Cache-Tags);
+    }
+    else {
+      return (synth(403, "Cache-Tags header missing."));
+    }
+    return(synth(200, "Ban added"));
+  }
+
+  if (req.method == "PURGE") {
+    return(purge);
+  }
+
   # Do not allow outside access to cron.php or install.php.
   #if (req.url ~ "^/(cron|install)\.php$" && !client.ip ~ internal) {
     # Have Varnish throw the error directly.
@@ -112,6 +126,11 @@ sub vcl_deliver {
   }
   else {
     set resp.http.X-Varnish-Cache = "MISS";
+  }
+  unset resp.http.Cache-Tags;
+
+  if (resp.http.Content-Type ~ "text/html") {
+    set resp.http.Cache-Control = "private,no-cache";
   }
 }
 
