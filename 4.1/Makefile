@@ -3,7 +3,7 @@
 VERSION ?= 4.1
 TAG ?= $(VERSION)
 
-REPO = zabolotny/varnish
+REPO ?= docksal/varnish
 NAME = varnish-$(VERSION)
 
 BASE_IMAGE_TAG = $(VERSION)
