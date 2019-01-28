@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e # Fail on errors
+set -ex # Fail on errors
 
 custom_vcl="/var/www/.docksal/etc/varnish/default.vcl"
 if [[ -f "$custom_vcl" ]]; then
