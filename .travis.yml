@@ -1,7 +1,6 @@
-language: bash
+dist: xenial
 
-services:
-  - docker
+language: minimal
 
 env:
   global:
@@ -12,7 +11,8 @@ env:
     - VERSION=4.1 TAGS=4.1,4
 
 install:
-  - curl -fsSL get.docksal.io | bash
+  # Install Docksal to have a matching versions of Docker on the build host
+  - curl -fsSL https://get.docksal.io | bash
   - fin version
   - fin sysinfo
 
