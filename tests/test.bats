@@ -64,14 +64,159 @@ _healthcheck_wait ()
 # Uncomment below, then comment skip in the test you want to debug. When done, reverse.
 # SKIP=1
 
+cd ../tests
+
 @test "Bare server" {
     [[ $SKIP == 1 ]] && skip
 
     ### Setup ###
-    make ENV="-e VARNISH_BACKEND_HOST=127.0.0.1" start
+    echo "VARNISH_IMAGE=\"${REPO}:${VERSION}\"" >.docksal/docksal-local.env
+    fin rm -f >/dev/null 2>&1
+    fin start >/dev/null 2>&1
+    # getting new container name for healtcheck
+    NAME=$(fin project status 2>/dev/null | grep varnish | awk '{print $1}')
     _healthcheck_wait
-
-    ### Cleanup ###
-    make clean
 }
 
+@test "Confirm 200 Returns a Miss First Time" {
+    [[ $SKIP == 1 ]] && skip
+    # Confirm 200 Returns a Miss First Time
+    run curl -sSk -i http://varnish.tests.docksal
+    echo "$output" | grep "HTTP/1.1 200 OK"
+    echo "$output" | grep "X-Varnish-Cache: MISS"
+    unset output
+}
+
+@test "Confirm 200 2nd Time Returns a HIT" {
+    [[ $SKIP == 1 ]] && skip
+    # Confirm 200 2nd Time Returns a HIT
+    run curl -sSk -i http://varnish.tests.docksal
+    [[ "$output" =~ "HTTP/1.1 200 OK" ]]
+    [[ "$output" =~ "X-Varnish-Cache: HIT" ]]
+    unset output
+}
+
+@test "Confirm 404 Returns a Miss First Time" {
+    [[ $SKIP == 1 ]] && skip
+    # Confirm 404 Returns a Miss First Time
+    run curl -sSk -i http://varnish.tests.docksal/nonsense.html
+    [[ "$output" =~ "HTTP/1.1 404 Not Found" ]]
+    [[ "$output" =~ "X-Varnish-Cache: MISS" ]]
+    unset output
+}
+
+@test "Confirm 404 2nd Time Returns a HIT" {
+    [[ $SKIP == 1 ]] && skip
+    # Confirm 404 2nd Time Returns a HIT
+    run curl -sSk -i http://varnish.tests.docksal/nonsense.html
+    [[ "$output" =~ "HTTP/1.1 404 Not Found" ]]
+    [[ "$output" =~ "X-Varnish-Cache: HIT" ]]
+    unset output
+}
+
+@test "Create nonsense.html file and return HIT for cache" {
+    [[ $SKIP == 1 ]] && skip
+    # Create nonsense.html file and return HIT for cache
+    echo "TEST OUTPUT" > nonsense.html
+    echo "TEST OUTPUT" > docroot/nonsense.html
+    run curl -sSk -i http://varnish.tests.docksal/nonsense.html
+    [[ "$output" =~ "HTTP/1.1 404 Not Found" ]]
+    [[ "$output" =~ "X-Varnish-Cache: HIT" ]]
+    unset output
+}
+
+@test "Confirm Purge Works" {
+    [[ $SKIP == 1 ]] && skip
+    # Confirm Purge Works
+    run curl -X PURGE -i http://varnish.tests.docksal/nonsense.html
+    [[ "$output" =~ "HTTP/1.1 200 Purged" ]]
+    unset output
+}
+
+@test "Confirm new file is returned as cache was cleared for URL" {
+    [[ $SKIP == 1 ]] && skip
+    # Confirm new file is returned as cache was cleared for URL
+    run curl -sSk -i http://varnish.tests.docksal/nonsense.html
+    [[ "$output" =~ "HTTP/1.1 200 OK" ]]
+    [[ "$output" =~ "X-Varnish-Cache: MISS" ]]
+    unset output
+}
+
+@test "Confirm File is in Cache" {
+    [[ $SKIP == 1 ]] && skip
+    # Confirm File is in Cache
+    run curl -sSk -i http://varnish.tests.docksal/nonsense.html
+    [[ "$output" =~ "HTTP/1.1 200 OK" ]]
+    [[ "$output" =~ "X-Varnish-Cache: HIT" ]]
+    unset output
+}
+
+@test "Confirm Cache is still only showing" {
+    [[ $SKIP == 1 ]] && skip
+    # Confirm Cache is still only showing
+    echo "TEST OUTPUT2" >> docroot/nonsense.html
+    run curl -sSk -i http://varnish.tests.docksal/nonsense.html
+    [[ "$output" =~ "HTTP/1.1 200 OK" ]]
+    [[ "$output" =~ "X-Varnish-Cache: HIT" ]]
+    [[ "$output" =~ "TEST OUTPUT" ]]
+    [[ ! "$output" =~ "TEST OUTPUT2" ]]
+    unset output
+}
+
+@test "Confirm Purge Works" {
+    [[ $SKIP == 1 ]] && skip
+    # Confirm Purge Works
+    run curl -X PURGE -i http://varnish.tests.docksal/nonsense.html
+    [[ "$output" =~ "HTTP/1.1 200 Purged" ]]
+    unset output
+}
+
+@test "Confirm Purge Works and output shows new file content" {
+    [[ $SKIP == 1 ]] && skip
+    # Confirm Purge Works and output shows new file content
+    run curl -sSk -i http://varnish.tests.docksal/nonsense.html
+    [[ "$output" =~ "HTTP/1.1 200 OK" ]]
+    [[ "$output" =~ "X-Varnish-Cache: MISS" ]]
+    [[ "$output" =~ "TEST OUTPUT" ]]
+    [[ "$output" =~ "TEST OUTPUT2" ]]
+    unset output
+}
+
+@test "Confirm new file content is in cache" {
+    [[ $SKIP == 1 ]] && skip
+    # Confirm new file content is in cache
+    run curl -sSk -i http://varnish.tests.docksal/nonsense.html
+    [[ "$output" =~ "HTTP/1.1 200 OK" ]]
+    [[ "$output" =~ "X-Varnish-Cache: HIT" ]]
+    [[ "$output" =~ "TEST OUTPUT" ]]
+    [[ "$output" =~ "TEST OUTPUT2" ]]
+    unset output
+    fin rm -f >/dev/null 2>&1 || true
+    rm -f docroot/nonsense.html || true
+}
+
+@test "Check config templates" {
+    [[ $SKIP == 1 ]] && skip
+    fin rm -f >/dev/null 2>&1
+    fin start >/dev/null 2>&1
+    # getting new container name for healtcheck
+    NAME=$(fin project status 2>/dev/null | grep varnish | awk '{print $1}')
+    _healthcheck_wait
+
+    ### Tests ###
+    # Load environment variables from docksal.env and confirm then are not empty
+    source .docksal/docksal.env
+    [[ "${VARNISH_SECRET}" == "changeme" ]]
+
+    # Check VARNISH_SECRET variable is passed
+    run fin exec --in=varnish 'echo ${VARNISH_SECRET}' 2>/dev/null
+    [[ "${output}" =~ "changeme" ]]
+    unset output
+
+    # Check secret file is the same as VARNISH_SECRET
+    run fin exec --in=varnish 'cat /etc/varnish/secret'
+    [[ "${output}" =~ "changeme" ]]
+    unset output
+    fin rm -f >/dev/null 2>&1 || true
+    rm -f .docksal/docksal-local.env
+}
