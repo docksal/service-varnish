@@ -3,7 +3,7 @@
 VERSION ?= 4.1
 TAG ?= $(VERSION)
 
-REPO ?= docksal/varnish
+REPO ?= zabolotny/varnish
 NAME = varnish-$(VERSION)
 
 BASE_IMAGE_TAG = $(VERSION)
@@ -22,7 +22,7 @@ build:
 	docker build -t $(REPO):$(TAG) .
 
 test:
-	IMAGE=$(REPO):$(TAG) NAME=$(NAME) ENV="-e VARNISH_BACKEND_HOST=127.0.0.1" ../tests/test.bats
+	IMAGE=$(REPO):$(TAG) REPO=$(REPO) NAME=$(NAME) VERSION=$(VERSION) ../tests/test.bats
 
 push:
 	docker push $(REPO):$(TAG)

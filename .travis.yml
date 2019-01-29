@@ -1,10 +1,12 @@
-dist: xenial
+language: bash
 
-language: minimal
+services:
+  - docker
 
 env:
   global:
     - REPO=docksal/varnish
+
   matrix:
     - VERSION=5.2 TAGS=5.2,5,latest
     - VERSION=4.1 TAGS=4.1,4

@@ -1,5 +1,6 @@
 # Varnish Docker images for Docksal
 
+- Varnish 3.0 (deprecated and unsupported)
 - Varnish 4.1
 - Varnish 5.2
 
