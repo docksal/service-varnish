@@ -116,24 +116,17 @@ cd ../tests
 	unset output
 }
 
-@test "Confirm Purge Works" {
-	[[ $SKIP == 1 ]] && skip
-	# Confirm Purge Works
-	run curl -X PURGE -i http://varnish.tests.docksal/nonsense.html
-	[[ "$output" =~ "HTTP/1.1 200 Purged" ]]
-	unset output
-}
-
-@test "Confirm new file is returned as cache was cleared for URL" {
+@test "Purge cache and confirm new file is returned as cache was cleared for URL" {
 	[[ $SKIP == 1 ]] && skip
 	# Confirm new file is returned as cache was cleared for URL
+	run curl -X PURGE -i http://varnish.tests.docksal/nonsense.html
 	run curl -sSk -i http://varnish.tests.docksal/nonsense.html
 	[[ "$output" =~ "HTTP/1.1 200 OK" ]]
 	[[ "$output" =~ "X-Varnish-Cache: MISS" ]]
 	unset output
 }
 
-@test "Confirm File is in Cache" {
+@test "Confirm 2nd time File returned from cache" {
 	[[ $SKIP == 1 ]] && skip
 	# Confirm File is in Cache
 	run curl -sSk -i http://varnish.tests.docksal/nonsense.html
@@ -142,7 +135,7 @@ cd ../tests
 	unset output
 }
 
-@test "Confirm Cache is still only showing" {
+@test "Modify file content and Confirm file is still returned from cache" {
 	[[ $SKIP == 1 ]] && skip
 	# Confirm Cache is still only showing
 	echo "TEST OUTPUT2" >> docroot/nonsense.html
@@ -154,17 +147,10 @@ cd ../tests
 	unset output
 }
 
-@test "Confirm Purge Works" {
-	[[ $SKIP == 1 ]] && skip
-	# Confirm Purge Works
-	run curl -X PURGE -i http://varnish.tests.docksal/nonsense.html
-	[[ "$output" =~ "HTTP/1.1 200 Purged" ]]
-	unset output
-}
-
 @test "Confirm Purge Works and output shows new file content" {
 	[[ $SKIP == 1 ]] && skip
 	# Confirm Purge Works and output shows new file content
+	run curl -X PURGE -i http://varnish.tests.docksal/nonsense.html
 	run curl -sSk -i http://varnish.tests.docksal/nonsense.html
 	[[ "$output" =~ "HTTP/1.1 200 OK" ]]
 	[[ "$output" =~ "X-Varnish-Cache: MISS" ]]
@@ -173,7 +159,7 @@ cd ../tests
 	unset output
 }
 
-@test "Confirm new file content is in cache" {
+@test "Confirm 2nd time new file content returns from cache" {
 	[[ $SKIP == 1 ]] && skip
 	# Confirm new file content is in cache
 	run curl -sSk -i http://varnish.tests.docksal/nonsense.html
@@ -181,6 +167,22 @@ cd ../tests
 	[[ "$output" =~ "X-Varnish-Cache: HIT" ]]
 	[[ "$output" =~ "TEST OUTPUT" ]]
 	[[ "$output" =~ "TEST OUTPUT2" ]]
+	unset output
+}
+
+@test "Adding BAN test" {
+	[[ $SKIP == 1 ]] && skip
+	# Confirm BAN added
+	run curl -s -X BAN -i -H "Cache-Tags: add.this.to.ban"  http://varnish.tests.docksal/nonsense.html
+	[[ "$output" =~ "HTTP/1.1 200 Ban added" ]]
+	unset output
+}
+
+@test "Check BAN exists" {
+	[[ $SKIP == 1 ]] && skip
+	# Confirm BAN tag exists
+	run fin exec --in=varnish "varnishadm ban.list"
+	[[ "$output" =~ "add.this.to.ban" ]]
 	unset output
 	fin rm -f >/dev/null 2>&1 || true
 	rm -f docroot/nonsense.html || true
