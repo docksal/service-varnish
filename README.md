@@ -8,8 +8,6 @@ This image(s) is part of the [Docksal](http://docksal.io) image library.
 
 ## Features
 
-The following feature were added on top of the Fourkitchens config:
-
 - BigPipe support
 
 
@@ -25,10 +23,6 @@ The following feature were added on top of the Fourkitchens config:
 
 
 ## VCL
-
-The default VCL is based on:
-
-https://fourkitchens.atlassian.net/wiki/display/TECH/Configure+Varnish+3+for+Drupal+7
 
 To provide a custom VCL config mount it at `/opt/default.vcl`.
 
