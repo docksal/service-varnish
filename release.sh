@@ -4,11 +4,7 @@ set -e
 
 # No pushes for PRs
 if [[ "${TRAVIS_PULL_REQUEST}" == "false" ]]; then
-	# Image tag scheme: <software-version>-<image-stability-tag>
-	# Examples:
-	# develop => 4.1-edge, 5.2-edge
-	# master => 4.1 / 4, 5.2 / 5 / latest
-	# 1.0.0 => 4.1-1.0 / 4-1.0, 5.2-1.0 / 5-1.0
+	# Image tag scheme: <software-version>-<image-stability-tag>[-<flavor>]
 	if [[ "${TRAVIS_BRANCH}" == "develop" ]]; then
 		export STABILITY_TAG="edge"
 	elif [[ "${TRAVIS_BRANCH}" == "master" ]]; then
@@ -26,7 +22,7 @@ if [[ "${TRAVIS_PULL_REQUEST}" == "false" ]]; then
 
 	# Push all applicable tag variations
 	for tag in "${tags[@]}"; do
-		[[ "${TRAVIS_BRANCH}" == "develop" ]] && [[ "${tag}" ~= "latest" ]] && continue
+		if [[ "${TRAVIS_BRANCH}" == "develop" ]] && [[ "${tag}" =~ "latest" ]]; then continue; fi
 		make release TAG="${tag}"
 	done
 fi
