@@ -26,7 +26,7 @@ if [[ "${TRAVIS_PULL_REQUEST}" == "false" ]]; then
 
 	# Push all applicable tag variations
 	for tag in "${tags[@]}"; do
-		[[ "${TRAVIS_BRANCH}" == "develop" -a "${tag}" ~= "latest" ]] && continue
+		[[ "${TRAVIS_BRANCH}" == "develop" ]] && [[ "${tag}" ~= "latest" ]] && continue
 		make release TAG="${tag}"
 	done
 fi
