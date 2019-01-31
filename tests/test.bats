@@ -173,7 +173,7 @@ cd ../tests
 @test "Adding BAN test" {
 	[[ $SKIP == 1 ]] && skip
 	# Confirm BAN added
-	run curl -s -X BAN -i -H "Cache-Tags: add.this.to.ban"  http://varnish.tests.docksal/nonsense.html
+	run curl -s -X BAN -i -H "cache-tag-header-name: add.this.to.ban"  http://varnish.tests.docksal/nonsense.html
 	[[ "$output" =~ "HTTP/1.1 200 Ban added" ]]
 	unset output
 }
