@@ -14,5 +14,6 @@ services:
       service: varnish
     environment:
       - VARNISH_SECRET
+      - VARNISH_CACHE_TAGS_HEADER
     depends_on:
       - web

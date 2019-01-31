@@ -58,11 +58,11 @@ sub vcl_recv {
   }
 
   if (req.method == "BAN") {
-    if (req.http.Cache-Tags) {
-      ban("obj.http.Cache-Tags ~ " + req.http.Cache-Tags);
+    if (req.http.{VARNISH_CACHE_TAGS_HEADER}) {
+      ban("obj.http.{VARNISH_CACHE_TAGS_HEADER} ~ " + req.http.{VARNISH_CACHE_TAGS_HEADER});
     }
     else {
-      return (synth(403, "Cache-Tags header missing."));
+      return (synth(403, "{VARNISH_CACHE_TAGS_HEADER} header missing."));
     }
     return(synth(200, "Ban added"));
   }

@@ -12,7 +12,7 @@ else
 fi
 
 echo 'Evaluating config variables...'
-for name in VARNISH_BACKEND_PORT VARNISH_BACKEND_HOST VARNISH_BACKEND_DOMAIN
+for name in VARNISH_BACKEND_PORT VARNISH_BACKEND_HOST VARNISH_BACKEND_DOMAIN VARNISH_CACHE_TAGS_HEADER
 do
     eval value=\$$name
     sed -i "s|{${name}}|${value}|g" /etc/varnish/default.vcl
