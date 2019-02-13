@@ -55,11 +55,8 @@ _healthcheck_wait ()
 # To work on a specific test:
 # run `export SKIP=1` locally, then comment skip in the test you want to debug
 
-cd ../tests
-
 @test "Bare server" {
 	[[ $SKIP == 1 ]] && skip
-
 	### Setup ###
 	echo "VARNISH_IMAGE=\"${REPO}:${VERSION}\"" >.docksal/docksal-local.env
 	fin rm -f >/dev/null 2>&1

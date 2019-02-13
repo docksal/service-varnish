@@ -1,7 +1,9 @@
 # Varnish Docker images for Docksal
 
-- Varnish 4.1
+- Varnish 6.1
+- Varnish 6.0
 - Varnish 5.2
+- Varnish 4.1
 
 This image(s) is part of the [Docksal](http://docksal.io) image library.
 

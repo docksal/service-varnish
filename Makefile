@@ -1,10 +1,10 @@
 -include env_make
 
-VERSION ?= 6.1
+VERSION ?= 6.1.1
 TAG ?= $(VERSION)
 
 REPO ?= docksal/varnish
-NAME = varnish-$(VERSION)
+NAME = docksal-varnish-$(VERSION)
 
 BASE_IMAGE_TAG = $(VERSION)
 
@@ -19,10 +19,10 @@ endif
 default: build
 
 build:
-	docker build -t $(REPO):$(TAG) .
+	docker build -t $(REPO):$(TAG) --build-arg VERSION=$(VERSION) .
 
 test:
-	IMAGE=$(REPO):$(TAG) REPO=$(REPO) NAME=$(NAME) VERSION=$(VERSION) ../tests/test.bats
+	cd tests && IMAGE=$(REPO):$(TAG) REPO=$(REPO) NAME=$(NAME) VERSION=$(VERSION) ./test.bats
 
 push:
 	docker push $(REPO):$(TAG)
@@ -43,6 +43,6 @@ logs:
 	docker logs $(NAME)
 
 clean:
-	-docker rm -f $(NAME)
+	docker rm -f $(NAME) || true
 
 release: build push
