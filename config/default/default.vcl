@@ -1,21 +1,3 @@
-# Based on https://fourkitchens.atlassian.net/wiki/display/TECH/Configure+Varnish+3+for+Drupal+7
-
-# This is a basic VCL configuration file for varnish.  See the vcl(7)
-# man page for details on VCL syntax and semantics.
-#
-
-# TODO: Update internal subnet ACL and security.
-
-# Define the internal network subnet.
-# These are used below to allow internal access to certain files while not
-# allowing access from the public internet.
-# acl internal {
-#  "192.10.0.0"/24;
-# }
-
-# Default backend definition.  Set this to point to your content
-# server.
-#
 vcl 4.0;
 
 import std;

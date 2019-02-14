@@ -1,0 +1,70 @@
+#!/bin/bash
+
+set -e
+
+export pkgver=${VERSION}
+
+# create temp directory
+tmp=$(mktemp -d)
+
+# include version specific functions and variables
+. /tmp/scripts/${pkgver%.*}/include
+
+# prepare build directory
+mkdir -p ${builddir}
+
+# download source code
+wget -qO- "${url}" | tar xz --strip 1 -C ${builddir}
+
+# enter build directory
+cd ${builddir}
+
+# Patch from alpine varnish package repository.
+for i in /tmp/patches/"${pkgver%.*}"/*.patch; do patch -p1 -i "${i}"; done
+
+apk add --update --no-cache ${depends}
+apk add --update --no-cache ${makedepends} -t .makedepends
+
+build
+
+pkgdir="/tmp/pkg"
+
+mkdir -p ${pkgdir}
+make
+make DESTDIR=${pkgdir} install
+
+mkdir -p /usr/share/varnish
+mv LICENSE /usr/share/varnish/
+
+binfiles=$(scanelf -R "$pkgdir" | grep ET_DYN | sed "s:$pkgdir\/::g" | sed "s:ET_DYN ::g"); \
+for f in $binfiles
+do
+    srcdir=$(dirname $pkgdir/$f)
+    srcfile=$(basename $pkgdir/$f)
+    cd $srcdir
+    XATTR=$(getfattr --match="" --dump "${srcfile}")
+    strip $srcfile
+    [ -n "$XATTR" ] && { echo "$XATTR" | setfattr --restore=-; }
+done
+
+# Remove info, help, docs (default_docs from alpinelinux/abuild).
+for i in doc man info html sgml gtk-doc ri help
+do
+	if [ -d "$pkgdir/usr/share/$i" ]
+	then
+		rm -rf "$pkgdir/usr/share/$i"
+    fi
+done
+
+rsync -a --links "${pkgdir}/" /
+
+mkdir -p /etc/varnish/ /opt
+
+# uncomment to use separate config for each version
+# rsync -a --links /tmp/config/"${pkgver%.*}"/ /opt/
+rsync -a --links /tmp/config/default/ /opt/
+
+apk del --purge -t .makedepends
+rm -rf /var/cache/apk/*
+rm -rf /tmp/*
+

@@ -7,9 +7,9 @@ env:
     - REPO=docksal/varnish
 
   matrix:
-    - VERSION=6.1 TAGS=6.1,6,latest
-    - VERSION=5.2 TAGS=5.2,5
-    - VERSION=4.1 TAGS=4.1,4
+    - VERSION=6.1.1 TAGS=6.1,6,latest
+    - VERSION=6.0.2 TAGS=6.0
+    - VERSION=4.1.10 TAGS=4
 
 install:
   # Install Docksal to have a matching versions of Docker on the build host
@@ -18,7 +18,6 @@ install:
   - fin sysinfo
 
 script:
-  - cd ${VERSION}
   - make
   - make test
 
