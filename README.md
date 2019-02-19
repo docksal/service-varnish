@@ -1,14 +1,22 @@
 # Varnish Docker images for Docksal
 
-- Varnish 4.1
-- Varnish 5.2
+Varnish is an HTTP accelerator designed for content-heavy dynamic web sites as well as APIs.
 
 This image(s) is part of the [Docksal](http://docksal.io) image library.
 
 
+## Versions
+
+- `docksal/varnish:6.1`
+- `docksal/varnish:6.0`
+- `docksal/varnish:4.1`
+
+
 ## Features
 
-- BigPipe support
+- Cache flushing using `PURGE` (individual pages) and `BAN` (cache tag based) requests
+- VCL config settings via environment variables, as well as custom VCL config support
+- BigPipe support 
 
 
 ## Environmental variables
@@ -37,11 +45,11 @@ curl -X PURGE http://varnish.tests.docksal/node/1
 
 Cache for a group of URLs can be flushed using the `BAN` HTTP method by passing a list of tags via a specific header.
 
-Using `BAN` requires the application to first tag all responses with cache tags.
+The application has to provide the cache tags header value(s) in the response (e.g. `Cache-Tags: node:1 term:2`).
 These tags are then used to ban pages from Varnish cache (usually handled by the application using a module/library).
 
 By default, `Cache-Tags` is used as the header to pass cache tags.
-The header name can be overriden via the `VARNISH_CACHE_TAGS_HEADER` environment variable.
+The header name can be overridden via the `VARNISH_CACHE_TAGS_HEADER` environment variable.
 
 Depending your application environment `VARNISH_CACHE_TAGS_HEADER` may need to be set to:
 
