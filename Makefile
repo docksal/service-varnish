@@ -1,4 +1,4 @@
--include env_make
+DOCKER ?= docker
 
 VERSION ?= 6.1
 TAG ?= $(VERSION)
@@ -9,40 +9,61 @@ NAME = docksal-varnish-$(VERSION)
 BASE_IMAGE_TAG = $(VERSION)
 
 ifneq ($(STABILITY_TAG),)
-    ifneq ($(TAG),latest)
-        override TAG := $(TAG)-$(STABILITY_TAG)
-    endif
+	ifneq ($(TAG),latest)
+		override TAG := $(TAG)-$(STABILITY_TAG)
+	endif
 endif
+
+-include tests/env_make
+
+.EXPORT_ALL_VARIABLES:
 
 .PHONY: build test push shell run start stop logs clean release
 
 default: build
 
 build:
-	docker build -t $(REPO):$(TAG) --build-arg VERSION=$(VERSION) .
+	$(DOCKER) build -t $(REPO):$(TAG) --build-arg VERSION=$(VERSION) .
 
 test:
-	cd tests && IMAGE=$(REPO):$(TAG) REPO=$(REPO) NAME=$(NAME) VERSION=$(VERSION) ./test.bats
+	IMAGE=$(REPO):$(TAG) REPO=$(REPO) NAME=$(NAME) VERSION=$(VERSION) tests/test.bats
 
 push:
-	docker push $(REPO):$(TAG)
+	$(DOCKER) push $(REPO):$(TAG)
 
-shell:
-	docker run --rm --name $(NAME) -i -t $(PORTS) $(VOLUMES) $(ENV) $(REPO):$(TAG) /bin/bash
+start-dependencies:
+	$(DOCKER) network create varnish
+	$(DOCKER) run -d --name $(NAME)-web -p 2581:80 --network=varnish -v $(PWD)/tests/docroot:/var/www/docroot docksal/apache
 
-run:
-	docker run --rm --name $(NAME) -e DEBUG=1 $(PORTS) $(VOLUMES) $(ENV) $(REPO):$(TAG) $(CMD)
+shell: clean start-dependencies
+	$(DOCKER) run --rm --name $(NAME) -i -t --network=varnish $(PORTS) $(VOLUMES) $(ENV) $(REPO):$(TAG) /bin/bash
 
-start:
-	docker run -d --name $(NAME) $(PORTS) $(VOLUMES) $(ENV) $(REPO):$(TAG)
+run: clean start-dependencies
+	$(DOCKER) run --rm --name $(NAME) -e DEBUG=1 --network=varnish $(PORTS) $(VOLUMES) $(ENV) $(REPO):$(TAG) $(CMD)
+
+start: clean start-dependencies
+	$(DOCKER) run -d --name $(NAME) --network=varnish $(PORTS) $(VOLUMES) $(ENV) $(REPO):$(TAG)
+
+exec:
+	$(DOCKER) exec $(NAME) bash -lc '$(CMD)'
+
+exec-it:
+	$(DOCKER) exec -it $(NAME) bash -lic '$(CMD)'
 
 stop:
-	docker stop $(NAME)
+	$(DOCKER) stop $(NAME)
+	$(DOCKER) stop $(NAME)-web
 
 logs:
-	docker logs $(NAME)
+	$(DOCKER) logs $(NAME)
+
+logs-follow:
+	$(DOCKER) logs -f $(NAME)
 
 clean:
-	docker rm -f $(NAME) || true
+	$(DOCKER) rm -f $(NAME) &>/dev/null || true
+	$(DOCKER) rm -f $(NAME)-web &>/dev/null || true
+	$(DOCKER) network remove varnish &>/dev/null || true
+	rm -f tests/docroot/index2.html &>/dev/null || true
 
 release: build push

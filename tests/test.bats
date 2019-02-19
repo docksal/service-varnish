@@ -14,7 +14,7 @@ teardown () {
 _healthcheck ()
 {
 	local health_status
-	health_status=$(docker inspect --format='{{json .State.Health.Status}}' "$1" 2>/dev/null)
+	health_status=$(${DOCKER} inspect --format='{{json .State.Health.Status}}' "$1" 2>/dev/null)
 
 	# Wait for 5s then exit with 0 if a container does not have a health status property
 	# Necessary for backward compatibility with images that do not support health checks
@@ -55,100 +55,73 @@ _healthcheck_wait ()
 # To work on a specific test:
 # run `export SKIP=1` locally, then comment skip in the test you want to debug
 
-@test "Bare server" {
-	[[ $SKIP == 1 ]] && skip
-	### Setup ###
-	echo "VARNISH_IMAGE=\"${REPO}:${VERSION}\"" >.docksal/docksal-local.env
-	fin rm -f >/dev/null 2>&1
-	fin start >/dev/null 2>&1
-	# getting new container name for healtcheck
-	NAME=$(fin project status 2>/dev/null | grep varnish | awk '{print $1}')
-	_healthcheck_wait
+@test "${NAME} container is up and using the \"${IMAGE}\" image" {
+	[[ ${SKIP} == 1 ]] && skip
+
+	run _healthcheck_wait
+	unset output
+
+	# Using "bash -c" here to expand ${DOCKER} (in case it's more that a single word).
+	# Without bats run returns "command not found"
+	run bash -c "${DOCKER} ps --filter 'name=${NAME}' --format '{{ .Image }}'"
+	[[ "$output" =~ "${IMAGE}" ]]
+	unset output
 }
 
-@test "Confirm 200 Returns a Miss First Time" {
+@test "Caching for 200 responses" {
 	[[ $SKIP == 1 ]] && skip
-	# Confirm 200 Returns a Miss First Time
-	run curl -sSk -i http://varnish.tests.docksal
+
+	# Confirm a cache MISS 1st time
+	run curl -sSk -I http://varnish.docksal:2580/index.html
 	echo "$output" | grep "HTTP/1.1 200 OK"
 	echo "$output" | grep "X-Varnish-Cache: MISS"
 	unset output
-}
 
-@test "Confirm 200 2nd Time Returns a HIT" {
-	[[ $SKIP == 1 ]] && skip
-	# Confirm 200 2nd Time Returns a HIT
-	run curl -sSk -i http://varnish.tests.docksal
+	# Confirm a cache HIT 2nd time
+	run curl -sSk -I http://varnish.docksal:2580/index.html
 	[[ "$output" =~ "HTTP/1.1 200 OK" ]]
 	[[ "$output" =~ "X-Varnish-Cache: HIT" ]]
 	unset output
 }
 
-@test "Confirm 404 Returns a Miss First Time" {
+@test "Caching for 404 responses" {
 	[[ $SKIP == 1 ]] && skip
-	# Confirm 404 Returns a Miss First Time
-	run curl -sSk -i http://varnish.tests.docksal/nonsense.html
+
+	# Confirm a cache MISS 1st time
+	run curl -sSk -I http://varnish.docksal:2580/nonsense.html
 	[[ "$output" =~ "HTTP/1.1 404 Not Found" ]]
 	[[ "$output" =~ "X-Varnish-Cache: MISS" ]]
 	unset output
-}
 
-@test "Confirm 404 2nd Time Returns a HIT" {
-	[[ $SKIP == 1 ]] && skip
-	# Confirm 404 2nd Time Returns a HIT
-	run curl -sSk -i http://varnish.tests.docksal/nonsense.html
+	# Confirm a cache HIT 2nd time
+	run curl -sSk -I http://varnish.docksal:2580/nonsense.html
 	[[ "$output" =~ "HTTP/1.1 404 Not Found" ]]
 	[[ "$output" =~ "X-Varnish-Cache: HIT" ]]
 	unset output
 }
 
-@test "Create nonsense.html file and return HIT for cache" {
+@test "PURGE request" {
 	[[ $SKIP == 1 ]] && skip
-	# Create nonsense.html file and return HIT for cache
-	echo "TEST OUTPUT" > nonsense.html
-	echo "TEST OUTPUT" > docroot/nonsense.html
-	run curl -sSk -i http://varnish.tests.docksal/nonsense.html
-	[[ "$output" =~ "HTTP/1.1 404 Not Found" ]]
-	[[ "$output" =~ "X-Varnish-Cache: HIT" ]]
-	unset output
-}
 
-@test "Purge cache and confirm new file is returned as cache was cleared for URL" {
-	[[ $SKIP == 1 ]] && skip
-	# Confirm new file is returned as cache was cleared for URL
-	run curl -X PURGE -i http://varnish.tests.docksal/nonsense.html
-	run curl -sSk -i http://varnish.tests.docksal/nonsense.html
-	[[ "$output" =~ "HTTP/1.1 200 OK" ]]
-	[[ "$output" =~ "X-Varnish-Cache: MISS" ]]
-	unset output
-}
+	# Create a new file and warm-up the cache
+	echo "TEST OUTPUT" > tests/docroot/index2.html
+	curl -sSk -i http://varnish.docksal:2580/index2.html
+	# Modify the file
+	echo "TEST OUTPUT2" >> tests/docroot/index2.html
 
-@test "Confirm 2nd time File returned from cache" {
-	[[ $SKIP == 1 ]] && skip
-	# Confirm File is in Cache
-	run curl -sSk -i http://varnish.tests.docksal/nonsense.html
-	[[ "$output" =~ "HTTP/1.1 200 OK" ]]
-	[[ "$output" =~ "X-Varnish-Cache: HIT" ]]
-	unset output
-}
-
-@test "Modify file content and Confirm file is still returned from cache" {
-	[[ $SKIP == 1 ]] && skip
-	# Confirm Cache is still only showing
-	echo "TEST OUTPUT2" >> docroot/nonsense.html
-	run curl -sSk -i http://varnish.tests.docksal/nonsense.html
+	# Confirm the cached version is returned
+	run curl -sSk -i http://varnish.docksal:2580/index2.html
 	[[ "$output" =~ "HTTP/1.1 200 OK" ]]
 	[[ "$output" =~ "X-Varnish-Cache: HIT" ]]
 	[[ "$output" =~ "TEST OUTPUT" ]]
 	[[ ! "$output" =~ "TEST OUTPUT2" ]]
 	unset output
-}
 
-@test "Confirm Purge Works and output shows new file content" {
-	[[ $SKIP == 1 ]] && skip
-	# Confirm Purge Works and output shows new file content
-	run curl -X PURGE -i http://varnish.tests.docksal/nonsense.html
-	run curl -sSk -i http://varnish.tests.docksal/nonsense.html
+	# Confirm new file is returned after PURGE
+	curl -X PURGE http://varnish.docksal:2580/index2.html
+	# Give varnish a bit of time to process the purge
+	sleep 1
+	run curl -sSk -i http://varnish.docksal:2580/index2.html
 	[[ "$output" =~ "HTTP/1.1 200 OK" ]]
 	[[ "$output" =~ "X-Varnish-Cache: MISS" ]]
 	[[ "$output" =~ "TEST OUTPUT" ]]
@@ -156,57 +129,59 @@ _healthcheck_wait ()
 	unset output
 }
 
-@test "Confirm 2nd time new file content returns from cache" {
+@test "BAN request" {
 	[[ $SKIP == 1 ]] && skip
-	# Confirm new file content is in cache
-	run curl -sSk -i http://varnish.tests.docksal/nonsense.html
+
+	# Check cache tags header are present in the response from backend
+	run curl -sSk -I http://varnish.docksal:2581/ban.html
+	[[ "$output" =~ "Cache-Tags: ban.test" ]]
+	unset output
+
+	# Warm-up cache, check for a HIT and that the cache tags header is stripped from Varnish response
+	curl -sSk http://varnish.docksal:2580/ban.html &>/dev/null
+	run curl -sSk -I http://varnish.docksal:2580/ban.html
 	[[ "$output" =~ "HTTP/1.1 200 OK" ]]
 	[[ "$output" =~ "X-Varnish-Cache: HIT" ]]
-	[[ "$output" =~ "TEST OUTPUT" ]]
-	[[ "$output" =~ "TEST OUTPUT2" ]]
+	[[ ! "$output" =~ "Cache-Tags: ban.test" ]]
 	unset output
-}
 
-@test "Adding BAN test" {
-	[[ $SKIP == 1 ]] && skip
-	# Confirm BAN added
-	run curl -s -X BAN -i -H "cache-tag-header-name: add.this.to.ban"  http://varnish.tests.docksal/nonsense.html
+	# Add a BAN
+	run curl -sSk -X BAN -I -H "Cache-Tags: ban.test"  http://varnish.docksal:2580/ban.html
 	[[ "$output" =~ "HTTP/1.1 200 Ban added" ]]
 	unset output
-}
 
-@test "Check BAN exists" {
-	[[ $SKIP == 1 ]] && skip
-	# Confirm BAN tag exists
-	run fin exec --in=varnish "varnishadm ban.list"
-	[[ "$output" =~ "add.this.to.ban" ]]
+	# Confirm ban exists in ban.list
+	run make exec -e CMD='varnishadm ban.list'
+	[[ "$output" =~ "ban.test" ]]
 	unset output
-	fin rm -f >/dev/null 2>&1 || true
-	rm -f docroot/nonsense.html || true
+
+	# Confirm cache was purged
+	run curl -sSk -I http://varnish.docksal:2580/ban.html
+	[[ "$output" =~ "HTTP/1.1 200 OK" ]]
+	[[ "$output" =~ "X-Varnish-Cache: MISS" ]]
+	unset output
 }
 
-@test "Check config templates" {
+@test "Config templates" {
 	[[ $SKIP == 1 ]] && skip
-	fin rm -f >/dev/null 2>&1
-	fin start >/dev/null 2>&1
-	# getting new container name for healtcheck
-	NAME=$(fin project status 2>/dev/null | grep varnish | awk '{print $1}')
-	_healthcheck_wait
+
+	# Restart with config overrides
+	ENV="\
+		-e VARNISH_BACKEND_HOST=${NAME}-web \
+		-e VARNISH_SECRET=varnish-secret \
+		-e VARNISH_CACHE_TAGS_HEADER=Cache-Tags-Custom \
+	"\
+		make start
+
+	run _healthcheck_wait
+	unset output
 
 	### Tests ###
-	# Load environment variables from docksal.env and confirm then are not empty
-	source .docksal/docksal.env
-	[[ "${VARNISH_SECRET}" == "changeme" ]]
-
-	# Check VARNISH_SECRET variable is passed
-	run fin exec --in=varnish 'echo ${VARNISH_SECRET}' 2>/dev/null
-	[[ "${output}" =~ "changeme" ]]
+	run make exec -e CMD='cat /etc/varnish/secret | grep "$${VARNISH_SECRET}"'
+	[[ "VARNISH_SECRET" && ${status} == 0 ]]
 	unset output
 
-	# Check secret file is the same as VARNISH_SECRET
-	run fin exec --in=varnish 'cat /etc/varnish/secret'
-	[[ "${output}" =~ "changeme" ]]
+	run make exec -e CMD='cat /etc/varnish/default.vcl | grep "req.http.$${VARNISH_CACHE_TAGS_HEADER}"'
+	[[ "VARNISH_CACHE_TAGS_HEADER" && ${status} == 0 ]]
 	unset output
-	fin rm -f >/dev/null 2>&1 || true
-	rm -f .docksal/docksal-local.env
 }
