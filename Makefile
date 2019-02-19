@@ -61,9 +61,9 @@ logs-follow:
 	$(DOCKER) logs -f $(NAME)
 
 clean:
-	$(DOCKER) rm -f $(NAME) &>/dev/null || true
-	$(DOCKER) rm -f $(NAME)-web &>/dev/null || true
-	$(DOCKER) network remove varnish &>/dev/null || true
-	rm -f tests/docroot/index2.html &>/dev/null || true
+	$(DOCKER) rm -f $(NAME) || true
+	$(DOCKER) rm -f $(NAME)-web || true
+	$(DOCKER) network remove varnish || true
+	rm -f tests/docroot/index2.html || true
 
 release: build push
