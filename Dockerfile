@@ -6,6 +6,8 @@ ENV VERSION=${VERSION}
 RUN set -ex; \
 	apk add --update --no-cache \
 		bash \
+		su-exec \
+		supervisor \
 	;\
 	case ${VERSION} in \
 		6.1) alpinever="3.9";; \
@@ -33,6 +35,9 @@ RUN set -xe; \
 	apk del --purge .fetch-deps; \
 	rm -rf /var/cache/apk/*
 
+# Override the main supervisord config file, since some parameters are not overridable via an include
+# See https://github.com/Supervisor/supervisor/issues/962
+COPY conf/supervisord.conf /etc/supervisord.conf
 COPY conf/default.vcl.tmpl /etc/varnish/default.vcl.tmpl
 COPY docker-entrypoint.d /etc/docker-entrypoint.d/
 COPY bin /usr/local/bin/
