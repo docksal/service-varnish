@@ -7,9 +7,11 @@ This image(s) is part of the [Docksal](http://docksal.io) image library.
 
 ## Versions
 
-- `docksal/varnish:6.1`
-- `docksal/varnish:6.0`
-- `docksal/varnish:4.1`
+- `docksal/varnish:4.1` (`docksal/varnish:4.1-2.0`)
+- `docksal/varnish:6.0` (`docksal/varnish:6.0-2.0`)
+- `docksal/varnish:6.1` (`docksal/varnish:6.1-2.0`, `docksal/varnish:latest`)
+
+Image tag scheme: `<software-version>[-<image-stability-tag>][-<flavor>]`
 
 
 ## Features
