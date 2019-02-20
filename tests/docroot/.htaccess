@@ -1,0 +1,5 @@
+# Add Cache-Tags header to ban.html
+<Files ban.html>
+	Header add Cache-Tags: "ban.test"
+	Header add Cache-Tags-Custom: "ban.test"
+</Files>

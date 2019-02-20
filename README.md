@@ -1,17 +1,22 @@
 # Varnish Docker images for Docksal
 
-- Varnish 3.0 (deprecated and unsupported)
-- Varnish 4.1
-- Varnish 5.2
+Varnish is an HTTP accelerator designed for content-heavy dynamic web sites as well as APIs.
 
 This image(s) is part of the [Docksal](http://docksal.io) image library.
 
 
+## Versions
+
+- `docksal/varnish:6.1`
+- `docksal/varnish:6.0`
+- `docksal/varnish:4.1`
+
+
 ## Features
 
-The following feature were added on top of the Fourkitchens config:
-
-- BigPipe support
+- Cache flushing using `PURGE` (individual pages) and `BAN` (cache tag based) requests
+- VCL config settings via environment variables, as well as custom VCL config support
+- BigPipe support 
 
 
 ## Environmental variables
@@ -22,13 +27,44 @@ The following feature were added on top of the Fourkitchens config:
 - `VARNISH_CACHE_SIZE` - cache size, default: `64M`
 - `VARNISH_VARNISHD_PARAMS` - extra parameters for `varnishd`.
 - `VARNISH_VARNISHNCSA_PARAMS` - parameters for `varnishncsa` (logging).
+- `VARNISH_SECRET` - allow the secret to be set for varnish.
+- `VARNISH_CACHE_TAGS_HEADER` - Varnish cache header name for BAN's, default: `Cache-Tags`
+
+
+## Cache flushing
+
+### PURGE
+
+Cache for a specific URL can be flushed using the `PURGE` HTTP method, example:
+
+```
+curl -X PURGE http://varnish.tests.docksal/node/1
+```
+
+### BAN
+
+Cache for a group of URLs can be flushed using the `BAN` HTTP method by passing a list of tags via a specific header.
+
+The application has to provide the cache tags header value(s) in the response (e.g. `Cache-Tags: node:1 term:2`).
+These tags are then used to ban pages from Varnish cache (usually handled by the application using a module/library).
+
+By default, `Cache-Tags` is used as the header to pass cache tags.
+The header name can be overridden via the `VARNISH_CACHE_TAGS_HEADER` environment variable.
+
+Depending your application environment `VARNISH_CACHE_TAGS_HEADER` may need to be set to:
+
+- `Purge-Cache-Tags` for use with Drupal's [Purge module](https://www.drupal.org/project/purge)
+- `X-Acquia-Purge-Tags` for use with Drupal's [Acquia Purge module](https://www.drupal.org/project/acquia_purge)
+- `X-Cache-Tags` for [Symfony FOSHttpCache](https://foshttpcache.readthedocs.io/en/stable/response-tagging.html#tags)
+
+Using `BAN` to manually flush cache by tag:
+
+```
+curl -X BAN http://varnish.tests.docksal/ -H "Cache-Tags: node:1"
+```
 
 
 ## VCL
-
-The default VCL is based on:
-
-https://fourkitchens.atlassian.net/wiki/display/TECH/Configure+Varnish+3+for+Drupal+7
 
 To provide a custom VCL config mount it at `/opt/default.vcl`.
 

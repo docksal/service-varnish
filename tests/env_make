@@ -1,0 +1,5 @@
+ENV ?= \
+	-e VARNISH_BACKEND_HOST=$(NAME)-web
+
+PORTS ?= \
+	-p 2580:80
