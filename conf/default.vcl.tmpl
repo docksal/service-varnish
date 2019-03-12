@@ -172,3 +172,10 @@ sub vcl_synth {
 "} );
   return (deliver);
 }
+
+# Cache HTTP and HTTPS separate.
+sub vcl_hash {
+  if (req.http.X-Forwarded-Proto) {
+    hash_data(req.http.X-Forwarded-Proto);
+  }
+}
