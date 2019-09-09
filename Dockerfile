@@ -1,43 +1,18 @@
-FROM alpine:3.9
+ARG VERSION
+FROM varnish:${VERSION}
 
 ARG VERSION
 ENV VERSION=${VERSION}
 
-RUN set -ex; \
-	apk add --update --no-cache \
-		bash \
-		su-exec \
-		supervisor \
-	;\
-	case ${VERSION} in \
-		6.1) alpinever="3.9";; \
-		6.0) alpinever="3.8";; \
-		5.2) alpinever="3.7";; \
-		4.1) alpinever="3.6";; \
-	esac; \
-	mv /etc/apk/repositories /etc/apk/repositories.orig; \
-	echo "http://dl-cdn.alpinelinux.org/alpine/v${alpinever}/main" >/etc/apk/repositories; \
-	echo "http://dl-cdn.alpinelinux.org/alpine/v${alpinever}/community" >>/etc/apk/repositories; \
-	apk add --update --no-cache varnish; \
-	mv -f /etc/apk/repositories.orig /etc/apk/repositories; \
-	rm -rf /var/cache/apk/*
-
 # Install aditional dependencies
 ARG GOMPLATE_VERSION=3.0.0
-RUN set -xe; \
-	apk add --no-cache -t .fetch-deps \
-		curl \
-	; \
-	# gomplate - go templates in configs
-	curl -sSL https://github.com/hairyhenderson/gomplate/releases/download/v${GOMPLATE_VERSION}/gomplate_linux-amd64-slim -o /usr/local/bin/gomplate; \
-	chmod +x /usr/local/bin/gomplate; \
-	\
-	apk del --purge .fetch-deps; \
-	rm -rf /var/cache/apk/*
+RUN set -x && \
+	apt-get update && \
+	apt-get install -y --no-install-recommends curl && \
+	rm -rf /var/lib/apt/lists/* && \
+	curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v${GOMPLATE_VERSION}/gomplate_linux-amd64-slim && \
+	chmod 755 /usr/local/bin/gomplate
 
-# Override the main supervisord config file, since some parameters are not overridable via an include
-# See https://github.com/Supervisor/supervisor/issues/962
-COPY conf/supervisord.conf /etc/supervisord.conf
 COPY conf/default.vcl.tmpl /etc/varnish/default.vcl.tmpl
 COPY docker-entrypoint.d /etc/docker-entrypoint.d/
 COPY bin /usr/local/bin/
@@ -57,7 +32,7 @@ EXPOSE 80
 EXPOSE 6082
 
 ENTRYPOINT ["docker-entrypoint.sh"]
-CMD ["docker-cmd.sh"]
+CMD ["varnishd.sh"]
 
 # Health check script
 HEALTHCHECK --interval=5s --timeout=1s --retries=12 CMD ["docker-healthcheck.sh"]
