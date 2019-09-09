@@ -8,7 +8,7 @@ ENV VERSION=${VERSION}
 ARG GOMPLATE_VERSION=3.0.0
 RUN set -x && \
 	apt-get update && \
-	apt-get install -y --no-install-recommends curl && \
+	apt-get install -y --no-install-recommends curl net-tools && \
 	rm -rf /var/lib/apt/lists/* && \
 	curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v${GOMPLATE_VERSION}/gomplate_linux-amd64-slim && \
 	chmod 755 /usr/local/bin/gomplate
