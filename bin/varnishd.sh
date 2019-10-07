@@ -2,6 +2,7 @@
 
 echo 'Starting varnishd...'
 exec varnishd \
+	-F \
 	-f /etc/varnish/default.vcl \
 	-s malloc,${VARNISH_CACHE_SIZE} \
 	-a :${VARNISH_PORT} \
