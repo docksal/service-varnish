@@ -1,18 +1,11 @@
 DOCKER ?= docker
 
 VERSION ?= 6.2
-TAG ?= $(VERSION)
+BUILD_TAG ?= $(VERSION)
+SOFTWARE_VERSION ?= $(VERSION)
 
 REPO ?= docksal/varnish
 NAME = docksal-varnish-$(VERSION)
-
-BASE_IMAGE_TAG = $(VERSION)
-
-ifneq ($(STABILITY_TAG),)
-	ifneq ($(TAG),latest)
-		override TAG := $(TAG)-$(STABILITY_TAG)
-	endif
-endif
 
 -include tests/env_make
 
@@ -23,26 +16,26 @@ endif
 default: build
 
 build:
-	$(DOCKER) build -t $(REPO):$(TAG) --build-arg VERSION=$(VERSION) .
+	$(DOCKER) build -t $(REPO):$(BUILD_TAG) --build-arg VERSION=$(VERSION) .
 
 test:
-	IMAGE=$(REPO):$(TAG) REPO=$(REPO) NAME=$(NAME) VERSION=$(VERSION) tests/test.bats
+	IMAGE=$(REPO):$(BUILD_TAG) REPO=$(REPO) NAME=$(NAME) VERSION=$(VERSION) tests/test.bats
 
 push:
-	$(DOCKER) push $(REPO):$(TAG)
+	$(DOCKER) push $(REPO):$(BUILD_TAG)
 
 start-dependencies:
 	$(DOCKER) network create varnish
 	$(DOCKER) run -d --name $(NAME)-web -p 2581:80 --network=varnish -v $(PWD)/tests/docroot:/var/www/docroot docksal/apache
 
 shell: clean start-dependencies
-	$(DOCKER) run --rm --name $(NAME) -i -t --network=varnish $(PORTS) $(VOLUMES) $(ENV) $(REPO):$(TAG) /bin/bash
+	$(DOCKER) run --rm --name $(NAME) -i -t --network=varnish $(PORTS) $(VOLUMES) $(ENV) $(REPO):$(BUILD_TAG) /bin/bash
 
 run: clean start-dependencies
-	$(DOCKER) run --rm --name $(NAME) -e DEBUG=1 --network=varnish $(PORTS) $(VOLUMES) $(ENV) $(REPO):$(TAG) $(CMD)
+	$(DOCKER) run --rm --name $(NAME) -e DEBUG=1 --network=varnish $(PORTS) $(VOLUMES) $(ENV) $(REPO):$(BUILD_TAG) $(CMD)
 
 start: clean start-dependencies
-	$(DOCKER) run -d --name $(NAME) --network=varnish $(PORTS) $(VOLUMES) $(ENV) $(REPO):$(TAG)
+	$(DOCKER) run -d --name $(NAME) --network=varnish $(PORTS) $(VOLUMES) $(ENV) $(REPO):$(BUILD_TAG)
 
 exec:
 	$(DOCKER) exec $(NAME) bash -lc '$(CMD)'
@@ -66,4 +59,5 @@ clean:
 	$(DOCKER) network remove varnish || true
 	rm -f tests/docroot/index2.html || true
 
-release: build push
+release:
+	@scripts/docker-push.sh
