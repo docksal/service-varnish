@@ -5,6 +5,7 @@ language: minimal
 env:
   global:
     - REPO=docksal/varnish
+    - LATEST_VERSION=6.2
 
   matrix:
     - VERSION=6.0
