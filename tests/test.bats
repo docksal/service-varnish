@@ -72,13 +72,13 @@ _healthcheck_wait ()
 	[[ $SKIP == 1 ]] && skip
 
 	# Confirm a cache MISS 1st time
-	run curl -sSk -I http://varnish.docksal:2580/index.html
+	run curl -sSk -I http://varnish.docksal.site:2580/index.html
 	echo "$output" | grep "HTTP/1.1 200 OK"
 	echo "$output" | grep "X-Varnish-Cache: MISS"
 	unset output
 
 	# Confirm a cache HIT 2nd time
-	run curl -sSk -I http://varnish.docksal:2580/index.html
+	run curl -sSk -I http://varnish.docksal.site:2580/index.html
 	[[ "$output" =~ "HTTP/1.1 200 OK" ]]
 	[[ "$output" =~ "X-Varnish-Cache: HIT" ]]
 	unset output
@@ -88,13 +88,13 @@ _healthcheck_wait ()
 	[[ $SKIP == 1 ]] && skip
 
 	# Confirm a cache MISS 1st time
-	run curl -sSk -I http://varnish.docksal:2580/nonsense.html
+	run curl -sSk -I http://varnish.docksal.site:2580/nonsense.html
 	[[ "$output" =~ "HTTP/1.1 404 Not Found" ]]
 	[[ "$output" =~ "X-Varnish-Cache: MISS" ]]
 	unset output
 
 	# Confirm a cache HIT 2nd time
-	run curl -sSk -I http://varnish.docksal:2580/nonsense.html
+	run curl -sSk -I http://varnish.docksal.site:2580/nonsense.html
 	[[ "$output" =~ "HTTP/1.1 404 Not Found" ]]
 	[[ "$output" =~ "X-Varnish-Cache: HIT" ]]
 	unset output
@@ -105,12 +105,12 @@ _healthcheck_wait ()
 
 	# Create a new file and warm-up the cache
 	echo "TEST OUTPUT" > tests/docroot/index2.html
-	curl -sSk -i http://varnish.docksal:2580/index2.html
+	curl -sSk -i http://varnish.docksal.site:2580/index2.html
 	# Modify the file
 	echo "TEST OUTPUT2" >> tests/docroot/index2.html
 
 	# Confirm the cached version is returned
-	run curl -sSk -i http://varnish.docksal:2580/index2.html
+	run curl -sSk -i http://varnish.docksal.site:2580/index2.html
 	[[ "$output" =~ "HTTP/1.1 200 OK" ]]
 	[[ "$output" =~ "X-Varnish-Cache: HIT" ]]
 	[[ "$output" =~ "TEST OUTPUT" ]]
@@ -118,10 +118,10 @@ _healthcheck_wait ()
 	unset output
 
 	# Confirm new file is returned after PURGE
-	curl -X PURGE http://varnish.docksal:2580/index2.html
+	curl -X PURGE http://varnish.docksal.site:2580/index2.html
 	# Give varnish a bit of time to process the purge
 	sleep 1
-	run curl -sSk -i http://varnish.docksal:2580/index2.html
+	run curl -sSk -i http://varnish.docksal.site:2580/index2.html
 	[[ "$output" =~ "HTTP/1.1 200 OK" ]]
 	[[ "$output" =~ "X-Varnish-Cache: MISS" ]]
 	[[ "$output" =~ "TEST OUTPUT" ]]
@@ -133,20 +133,20 @@ _healthcheck_wait ()
 	[[ $SKIP == 1 ]] && skip
 
 	# Check cache tags header are present in the response from backend
-	run curl -sSk -I http://varnish.docksal:2581/ban.html
+	run curl -sSk -I http://varnish.docksal.site:2581/ban.html
 	[[ "$output" =~ "Cache-Tags: ban.test" ]]
 	unset output
 
 	# Warm-up cache, check for a HIT and that the cache tags header is stripped from Varnish response
-	curl -sSk http://varnish.docksal:2580/ban.html &>/dev/null
-	run curl -sSk -I http://varnish.docksal:2580/ban.html
+	curl -sSk http://varnish.docksal.site:2580/ban.html &>/dev/null
+	run curl -sSk -I http://varnish.docksal.site:2580/ban.html
 	[[ "$output" =~ "HTTP/1.1 200 OK" ]]
 	[[ "$output" =~ "X-Varnish-Cache: HIT" ]]
 	[[ ! "$output" =~ "Cache-Tags: ban.test" ]]
 	unset output
 
 	# Add a BAN
-	run curl -sSk -X BAN -I -H "Cache-Tags: ban.test"  http://varnish.docksal:2580/ban.html
+	run curl -sSk -X BAN -I -H "Cache-Tags: ban.test"  http://varnish.docksal.site:2580/ban.html
 	[[ "$output" =~ "HTTP/1.1 200 Ban added" ]]
 	unset output
 
@@ -156,7 +156,7 @@ _healthcheck_wait ()
 	unset output
 
 	# Confirm cache was purged
-	run curl -sSk -I http://varnish.docksal:2580/ban.html
+	run curl -sSk -I http://varnish.docksal.site:2580/ban.html
 	[[ "$output" =~ "HTTP/1.1 200 OK" ]]
 	[[ "$output" =~ "X-Varnish-Cache: MISS" ]]
 	unset output
