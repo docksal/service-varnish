@@ -1,6 +1,6 @@
 DOCKER ?= docker
 
-VERSION ?= 6.2
+VERSION ?= 7.0
 TAG ?= $(VERSION)
 
 REPO ?= docksal/varnish
