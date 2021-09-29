@@ -5,7 +5,7 @@ ARG VERSION
 ENV VERSION=${VERSION}
 
 # Install aditional dependencies
-ARG GOMPLATE_VERSION=3.0.0
+ARG GOMPLATE_VERSION=3.10.0
 RUN set -x && \
 	apt-get update && \
 	apt-get install -y --no-install-recommends curl net-tools && \
