@@ -93,7 +93,7 @@ jobs:
             github.ref == 'refs/heads/master' ||
             startsWith(github.ref, 'refs/tags')
           )
-        run: ./releash.sh
+        run: ./release.sh
         env:
           SOURCE_NAME: '${{ steps.source_name.outputs.SOURCE_NAME }}'
           SOURCE_BRANCH: '${{ steps.source_name.outputs.SOURCE_BRANCH }}'
