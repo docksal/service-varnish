@@ -1,16 +1,15 @@
-ARG VERSION
-FROM varnish:${VERSION}
+ARG UPSTREAM_IMAGE
+FROM ${UPSTREAM_IMAGE}
 
-ARG VERSION
-ENV VERSION=${VERSION}
+ARG TARGETARCH
 
 # Install aditional dependencies
-ARG GOMPLATE_VERSION=3.0.0
-RUN set -x && \
-	apt-get update && \
-	apt-get install -y --no-install-recommends curl net-tools && \
-	rm -rf /var/lib/apt/lists/* && \
-	curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v${GOMPLATE_VERSION}/gomplate_linux-amd64-slim && \
+ARG GOMPLATE_VERSION=3.10.0
+RUN set -xe; \
+	apt-get update; \
+	apt-get install -y --no-install-recommends curl net-tools; \
+	rm -rf /var/lib/apt/lists/*; \
+	curl -sSLf -o /usr/local/bin/gomplate https://github.com/hairyhenderson/gomplate/releases/download/v${GOMPLATE_VERSION}/gomplate_linux-${TARGETARCH}-slim; \
 	chmod 755 /usr/local/bin/gomplate
 
 COPY conf/default.vcl.tmpl /etc/varnish/default.vcl.tmpl
