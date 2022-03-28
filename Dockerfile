@@ -9,7 +9,7 @@ RUN set -xe; \
 	apt-get update; \
 	apt-get install -y --no-install-recommends curl net-tools; \
 	rm -rf /var/lib/apt/lists/*; \
-	curl -sSLf -o /usr/local/bin/gomplate https://github.com/hairyhenderson/gomplate/releases/download/v${GOMPLATE_VERSION}/gomplate_linux-${TARGETARCH}-slim; \
+	curl -sSLf -o /usr/local/bin/gomplate https://github.com/hairyhenderson/gomplate/releases/download/v${GOMPLATE_VERSION}/gomplate_linux-${TARGETARCH}; \
 	chmod 755 /usr/local/bin/gomplate
 
 COPY conf/default.vcl.tmpl /etc/varnish/default.vcl.tmpl
